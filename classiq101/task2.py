@@ -12,12 +12,14 @@ def main(cntrl: Output[QArray[QBit]], target: Output[QBit]) -> None:
 
 quantum_model = create_model(main)
 
+# width as the optimization parameter
 quantum_model_with_constraints = set_constraints(
     quantum_model, Constraints(optimization_parameter="width")
 )
 quantum_program = synthesize(quantum_model_with_constraints)
 show(quantum_program)
 
+# depth as the optimization parameter
 quantum_model_with_constraints = set_constraints(
     quantum_model, Constraints(optimization_parameter="depth")
 )
