@@ -1,7 +1,7 @@
 from classiq import *
 
 # If you have not yet authenticated please uncomment the line below
-authenticate()
+# authenticate()
 
 @qfunc
 def main(cntrl: Output[QArray[QBit]], target: Output[QBit]) -> None:

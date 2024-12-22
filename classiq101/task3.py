@@ -2,6 +2,9 @@ from classiq import *
 import numpy as np
 import matplotlib.pyplot as plt
 
+# If you have not yet authenticated please uncomment the line below
+# authenticate()
+
 @qfunc
 def main(cntrl: Output[QArray[QBit]], target: Output[QBit]) -> None:
     allocate(20, cntrl)
