@@ -7,6 +7,7 @@ from classiq import *
 def main(cntrl: Output[QArray[QBit]], target: Output[QBit]) -> None:
     allocate(5, cntrl)
     allocate(1, target)
+    hadamard_transform(cntrl)
     control(ctrl=cntrl, stmt_block=lambda: X(target))
 
 quantum_model = create_model(main)

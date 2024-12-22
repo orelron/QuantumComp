@@ -9,6 +9,7 @@ import matplotlib.pyplot as plt
 def main(cntrl: Output[QArray[QBit]], target: Output[QBit]) -> None:
     allocate(20, cntrl)
     allocate(1, target)
+    hadamard_transform(cntrl)
     control(ctrl=cntrl, stmt_block=lambda: X(target))
 
 width = np.zeros(31-22, dtype=int)
