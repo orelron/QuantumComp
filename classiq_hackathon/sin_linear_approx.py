@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 f = np.sin
 df = np.cos
 
-def sin_linear_approximation(
+def sin_linear_approx(
         domain_start: float = 0,
         domain_stop : float = 1,
         ) -> None:
@@ -13,29 +13,37 @@ def sin_linear_approximation(
     This function generates Chebyshev nodes as a fuction of the required n_qbits_precision.
     """
     # Find sin precision as a function of n_qbits_precision
-    n_qbits_precision_arr = np.arange(2, 20)
-    sin_precision = np.zeros(len(n_qbits_precision_arr))
-    for precision_idx, n_qbits_precision in enumerate(n_qbits_precision_arr):
-        x_arr = np.linspace(domain_start, domain_stop, 2**n_qbits_precision)
-        sin_x = f(x_arr)
-        sin_x_precision = np.round(sin_x * 2**n_qbits_precision) / 2**n_qbits_precision
-        sin_precision[precision_idx] = max(np.abs(sin_x - sin_x_precision))
-    # plot_sin_precision(n_qbits_precision_arr, sin_precision)
-
+    n_qbits_precision_arr = np.arange(5, 20)
+    sin_error = np.zeros(len(n_qbits_precision_arr))
     chebyshev_nodes = dict()
-    for nodes_idx, n_nodes in enumerate(range(2, 20)):
-        chebyshev_nodes[nodes_idx] = generate_chebyshev_nodes(domain_start, domain_stop, n_nodes)
-        for precision_idx, n_qbits_precision in enumerate(n_qbits_precision_arr):
-            x_arr = np.linspace(domain_start, domain_stop, 2**n_qbits_precision)
-            sin_x = f(x_arr)
+    for precision_idx, n_qbits_precision in enumerate(n_qbits_precision_arr):
+        x_arr = np.arange(start=domain_start, stop=domain_stop, step=1/2**n_qbits_precision)
+        sin_x = f(x_arr)
+        sin_x_precision = np.floor(sin_x * 2**n_qbits_precision) / 2**n_qbits_precision
+        sin_error[precision_idx] = max(np.abs(sin_x - sin_x_precision))
+        if precision_idx == 0:
+            node_start = 2
+        else:
+            node_start = chebyshev_nodes[nodes_idx]["n_nodes"]
+        for nodes_idx, n_nodes in enumerate(range(node_start, 20)):
+            if len(chebyshev_nodes) <= nodes_idx:
+                chebyshev_nodes[nodes_idx] = generate_chebyshev_nodes(domain_start, domain_stop, n_nodes)
             approx_values = np.array([
-                piecewise_linear_approximation(x, chebyshev_nodes[nodes_idx]["edges"], chebyshev_nodes[nodes_idx]["slop"], chebyshev_nodes[nodes_idx]["intercept"])
+                piecewise_linear_approximation(
+                    x, chebyshev_nodes[nodes_idx]["edges"], chebyshev_nodes[nodes_idx]["slop"], chebyshev_nodes[nodes_idx]["intercept"])
                 for x in x_arr]
                 )
-            approx_values = np.round(approx_values * 2**n_qbits_precision) / 2**n_qbits_precision
+            approx_values = np.floor(approx_values * 2**n_qbits_precision) / 2**n_qbits_precision
             chebyshev_error = np.max(np.abs(approx_values - sin_x))
-            if chebyshev_error < sin_precision[precision_idx]:
+            if chebyshev_error <= sin_error[precision_idx]:
                 chebyshev_nodes[nodes_idx]["desired_precision"] = n_qbits_precision
+                break
+    for i in chebyshev_nodes.keys():
+        p = chebyshev_nodes[i]["desired_precision"]
+        n_nodes = chebyshev_nodes[i]["n_nodes"]
+        print(f"{n_nodes=}, {p=}")
+            
+    # plot_sin_precision(n_qbits_precision_arr, sin_error)
             
         
 
@@ -144,4 +152,4 @@ def plot_sin_precision(n_qbits_precision_arr, sin_precision):
 
 
 if __name__ == "__main__":
-    sin_linear_approximation()
+    sin_linear_approx()
