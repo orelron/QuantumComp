@@ -5,12 +5,15 @@ import matplotlib.pyplot as plt
 f = np.sin
 df = np.cos
 
+def floor_func(x, n):
+    return np.floor(x * 2**n) / 2**n
+
 def sin_linear_approx(
         domain_start: float = 0,
         domain_stop : float = 1,
         ) -> None:
     """
-    This function generates Chebyshev nodes as a fuction of the required n_qbits_precision.
+    This function generates Chebyshev nodes as a function of the required n_qbits_precision.
     """
     # Find sin precision as a function of n_qbits_precision
     n_qbits_precision_arr = np.arange(5, 20)
@@ -19,7 +22,7 @@ def sin_linear_approx(
     for precision_idx, n_qbits_precision in enumerate(n_qbits_precision_arr):
         x_arr = np.arange(start=domain_start, stop=domain_stop, step=1/2**n_qbits_precision)
         sin_x = f(x_arr)
-        sin_x_precision = np.floor(sin_x * 2**n_qbits_precision) / 2**n_qbits_precision
+        sin_x_precision = floor_func(sin_x, n_qbits_precision)
         sin_error[precision_idx] = max(np.abs(sin_x - sin_x_precision))
         if precision_idx == 0:
             node_start = 2
@@ -28,12 +31,17 @@ def sin_linear_approx(
         for nodes_idx, n_nodes in enumerate(range(node_start, 20)):
             if len(chebyshev_nodes) <= nodes_idx:
                 chebyshev_nodes[nodes_idx] = generate_chebyshev_nodes(domain_start, domain_stop, n_nodes)
-            approx_values = np.array([
-                piecewise_linear_approximation(
-                    x, chebyshev_nodes[nodes_idx]["edges"], chebyshev_nodes[nodes_idx]["slop"], chebyshev_nodes[nodes_idx]["intercept"])
-                for x in x_arr]
-                )
-            approx_values = np.floor(approx_values * 2**n_qbits_precision) / 2**n_qbits_precision
+            
+            # Vectorize the piecewise_linear_approximation function
+            vectorized_approx = np.vectorize(piecewise_linear_approximation, excluded=['nodes', 'slope', 'intercept', 'n_qbits_precision'])
+            approx_values = vectorized_approx(
+                x_arr,
+                nodes=chebyshev_nodes[nodes_idx]["edges"],
+                slope=chebyshev_nodes[nodes_idx]["slop"],
+                intercept=chebyshev_nodes[nodes_idx]["intercept"],
+                n_qbits_precision=n_qbits_precision
+            )
+            approx_values = floor_func(approx_values, n_qbits_precision)
             chebyshev_error = np.max(np.abs(approx_values - sin_x))
             if chebyshev_error <= sin_error[precision_idx]:
                 chebyshev_nodes[nodes_idx]["desired_precision"] = n_qbits_precision
@@ -86,13 +94,13 @@ def find_edges(domain_start, domain_stop, nodes, slope, intercept):
         edge[i] = (intercept[i] - intercept[i-1]) / (slope[i-1] - slope[i])
     return edge
 
-def piecewise_linear_approximation(x: np.ndarray, nodes: np.ndarray, slope: np.ndarray, intercept: np.ndarray):
+def piecewise_linear_approximation(x: np.ndarray, nodes: np.ndarray, slope: np.ndarray, intercept: np.ndarray, n_qbits_precision: int) -> np.ndarray:
     """
     This function calculates the piecewise linear approximation of sin(x) for a given x.
     """
     for i_node in range(0,len(nodes)-1):
         if nodes[i_node] <= x <= nodes[i_node+1]:
-            return slope[i_node] * x + intercept[i_node]
+            return floor_func(floor_func(slope[i_node] * x, n_qbits_precision) + intercept[i_node],  n_qbits_precision)
     return None # This should never happen
 
 # Plot the results
