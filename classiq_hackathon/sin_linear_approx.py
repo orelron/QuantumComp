@@ -1,5 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
+from tqdm import tqdm  # Add tqdm for the waitbar
 
 # Define the function and its derivative
 f = np.sin
@@ -20,6 +21,7 @@ def sin_linear_approx(
     sin_error = np.zeros(len(n_qbits_precision_arr))
     chebyshev_nodes = dict()
     for precision_idx, n_qbits_precision in enumerate(n_qbits_precision_arr):
+    for precision_idx, n_qbits_precision in tqdm(enumerate(n_qbits_precision_arr), total=len(n_qbits_precision_arr), desc="Processing"):
         x_arr = np.arange(start=domain_start, stop=domain_stop, step=1/2**n_qbits_precision)
         sin_x = f(x_arr)
         sin_x_precision = floor_func(sin_x, n_qbits_precision)
