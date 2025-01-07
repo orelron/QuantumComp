@@ -20,17 +20,15 @@ def sin_linear_approx(
     n_qbits_precision_arr = np.arange(5, 20)
     sin_error = np.zeros(len(n_qbits_precision_arr))
     chebyshev_nodes = dict()
-    for precision_idx, n_qbits_precision in enumerate(n_qbits_precision_arr):
+    last_node_idx = 0
     for precision_idx, n_qbits_precision in tqdm(enumerate(n_qbits_precision_arr), total=len(n_qbits_precision_arr), desc="Processing"):
         x_arr = np.arange(start=domain_start, stop=domain_stop, step=1/2**n_qbits_precision)
         sin_x = f(x_arr)
         sin_x_precision = floor_func(sin_x, n_qbits_precision)
         sin_error[precision_idx] = max(np.abs(sin_x - sin_x_precision))
-        if precision_idx == 0:
-            node_start = 2
-        else:
-            node_start = chebyshev_nodes[nodes_idx]["n_nodes"]
-        for nodes_idx, n_nodes in enumerate(range(node_start, 20)):
+        for nodes_idx, n_nodes in enumerate(range(2, 20)):
+            if nodes_idx < last_node_idx:
+                continue
             if len(chebyshev_nodes) <= nodes_idx:
                 chebyshev_nodes[nodes_idx] = generate_chebyshev_nodes(domain_start, domain_stop, n_nodes)
             
@@ -47,11 +45,27 @@ def sin_linear_approx(
             chebyshev_error = np.max(np.abs(approx_values - sin_x))
             if chebyshev_error <= sin_error[precision_idx]:
                 chebyshev_nodes[nodes_idx]["desired_precision"] = n_qbits_precision
+                chebyshev_nodes[nodes_idx]["accuracy"] = chebyshev_error
+                last_node_idx = nodes_idx
+                flag_try = False
                 break
+            elif flag_try:
+                # If the error is greater than the desired precision, then we are bounded by the desired precision
+                chebyshev_nodes[nodes_idx-1]["desired_precision"] = n_qbits_precision
+                chebyshev_nodes[nodes_idx-1]["accuracy"] = chebyshev_error1
+                last_node_idx = nodes_idx
+                flag_try = False
+                break
+            else:
+                chebyshev_error1 = chebyshev_error
+                flag_try = True
     for i in chebyshev_nodes.keys():
-        p = chebyshev_nodes[i]["desired_precision"]
-        n_nodes = chebyshev_nodes[i]["n_nodes"]
-        print(f"{n_nodes=}, {p=}")
+        if "desired_precision" in chebyshev_nodes[i]:
+            p = chebyshev_nodes[i]["desired_precision"]
+            n_nodes = chebyshev_nodes[i]["n_nodes"]
+            sin_prec = sin_error[n_qbits_precision_arr == p][0]
+            accuracy = chebyshev_nodes[i]["accuracy"]
+        print(f"{n_nodes=}, {p=}, {accuracy=}, {sin_prec=}")
             
     # plot_sin_precision(n_qbits_precision_arr, sin_error)
             
